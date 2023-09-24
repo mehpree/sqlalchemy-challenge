@@ -24,7 +24,7 @@ Measurement = Base.classes.measurement
 Station = Base.classes.station
 
 # Create our session (link) from Python to the DB
-session = Session(engine)
+# session = Session(engine)
 
 #################################################
 # Flask Setup
@@ -47,11 +47,12 @@ def home():
     )
 @app.route("/api/v1.0/precipitation")
 def precipitation():
+    session = Session(engine)
     """Return the JSON representation of the last 12 months of precipitation data."""
     # Calculate the date 1 year ago from the last data point in the database
-    last_date = session.query(func.max(Measurement.date)).scalar()
-    last_date = dt.datetime.strptime(last_date, "%Y-%m-%d")
-    one_year_ago = last_date - dt.timedelta(days=365)
+    latest_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+    latest_date = dt.datetime.strptime(latest_date, "%Y-%m-%d")
+    one_year_ago = latest_date - dt.timedelta(days=365)
     
     # Query for the last 12 months of precipitation data
     results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= one_year_ago).all()
@@ -59,18 +60,27 @@ def precipitation():
     # Convert the query results to a dictionary
     precipitation_data = {date: prcp for date, prcp in results}
     
+    # percipitation_data = {}
+    # for date, prcp in results:
+    #     percipitation_data[date] = prcp
+    
+    session.close()
     return jsonify(precipitation_data)
 
 @app.route("/api/v1.0/stations")
 def stations():
+    session = Session(engine)
     """Return a JSON list of stations from the dataset."""
     results = session.query(Station.station).all()
     station_list = [station[0] for station in results]
-    
+   session.close()
+
     return jsonify(station_list)
 
 @app.route("/api/v1.0/tobs")
 def tobs():
+    session = Session(engine)
+
     """Return a JSON list of temperature observations for the previous year."""
     # Find the most active station
     most_active_station = session.query(Measurement.station, func.count(Measurement.station)).\
@@ -94,6 +104,8 @@ def tobs():
 
 @app.route("/api/v1.0/<start>")
 def start_date_stats(start):
+    session = Session(engine)
+
     """Return a JSON list of the minimum temperature, average temperature, and maximum temperature for dates greater than or equal to the start date."""
     # Convert the start date to a datetime object
     start_date = dt.datetime.strptime(start, "%Y-%m-%d")

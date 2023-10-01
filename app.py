@@ -12,9 +12,7 @@ from sqlalchemy import create_engine, func
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 
-# reflect an existing database into a new model
-
-# reflect the tables
+# Reflect an existing database into a new model
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 Base = automap_base()
 Base.prepare(engine, reflect=True)
@@ -22,9 +20,6 @@ Base.prepare(engine, reflect=True)
 # Save references to each table
 Measurement = Base.classes.measurement
 Station = Base.classes.station
-
-# Create our session (link) from Python to the DB
-# session = Session(engine)
 
 #################################################
 # Flask Setup
@@ -45,6 +40,7 @@ def home():
         f"/api/v1.0/&lt;start&gt;<br/>"
         f"/api/v1.0/&lt;start&gt;/&lt;end&gt;"
     )
+
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     session = Session(engine)
@@ -60,10 +56,6 @@ def precipitation():
     # Convert the query results to a dictionary
     precipitation_data = {date: prcp for date, prcp in results}
     
-    # percipitation_data = {}
-    # for date, prcp in results:
-    #     percipitation_data[date] = prcp
-    
     session.close()
     return jsonify(precipitation_data)
 
@@ -73,7 +65,7 @@ def stations():
     """Return a JSON list of stations from the dataset."""
     results = session.query(Station.station).all()
     station_list = [station[0] for station in results]
-   session.close()
+    session.close()
 
     return jsonify(station_list)
 
@@ -100,6 +92,7 @@ def tobs():
     # Create a list of dictionaries
     temperature_data = [{"date": date, "temperature": tobs} for date, tobs in results]
     
+    session.close()
     return jsonify(temperature_data)
 
 @app.route("/api/v1.0/<start>")
@@ -120,7 +113,7 @@ def start_date_stats(start):
         "TAVG": results[0][1],
         "TMAX": results[0][2]
     }
-    
+    session.close()
     return jsonify(start_date_stats_data)
 
 @app.route("/api/v1.0/<start>/<end>")
@@ -141,7 +134,7 @@ def start_end_date_stats(start, end):
         "TAVG": results[0][1],
         "TMAX": results[0][2]
     }
-    
+    session.close()
     return jsonify(start_end_date_stats_data)
 
 if __name__ == "__main__":
